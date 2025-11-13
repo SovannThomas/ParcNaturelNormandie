@@ -1,50 +1,59 @@
 package com.example.parcnaturelnormandie.ui.activities
 
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.example.parcnaturelnormandie.R
+import com.example.parcnaturelnormandie.model.ActivityItem
 
-import com.example.parcnaturelnormandie.ui.activities.placeholder.PlaceholderContent.PlaceholderItem
-import com.example.parcnaturelnormandie.databinding.FragmentItemBinding
-
-/**
- * [RecyclerView.Adapter] that can display a [PlaceholderItem].
- * TODO: Replace the implementation with code for your data type.
- */
 class MyItemActivitiesRecyclerViewAdapter(
-    private val values: List<PlaceholderItem>
-) : RecyclerView.Adapter<MyItemActivitiesRecyclerViewAdapter.ViewHolder>() {
+    private var items: List<ActivityItem>,
+    private val onItemClick: (ActivityItem) -> Unit
+) : RecyclerView.Adapter<MyItemActivitiesRecyclerViewAdapter.ActivityViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-
-        return ViewHolder(
-            FragmentItemBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
-        )
-
+    inner class ActivityViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val imgActivity: ImageView = itemView.findViewById(R.id.imgActivity)
+        val txtTitle: TextView = itemView.findViewById(R.id.txtTitle)
+        val txtDuration: TextView = itemView.findViewById(R.id.txtDuration)
+        val txtPrice: TextView = itemView.findViewById(R.id.txtPrice)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = values[position]
-        holder.idView.text = item.id
-        holder.contentView.text = item.content
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActivityViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.fragment_item, parent, false)
+        return ActivityViewHolder(view)
     }
 
-    override fun getItemCount(): Int = values.size
+    override fun onBindViewHolder(holder: ActivityViewHolder, position: Int) {
+        val item = items[position]
 
-    inner class ViewHolder(binding: FragmentItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        val idView: TextView = binding.itemNumber
-        val contentView: TextView = binding.content
+        // Titre = nom
+        holder.txtTitle.text = item.nom
 
-        override fun toString(): String {
-            return super.toString() + " '" + contentView.text + "'"
+        // Durée
+        holder.txtDuration.text = item.duree.ifBlank { "—" }
+
+        // Prix : gratuit si 0, sinon "XX €"
+        holder.txtPrice.text = when {
+            item.tarif <= 0 -> "Gratuit"
+            else -> "${item.tarif} €"
+        }
+
+
+
+        // Clic sur l’item
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
         }
     }
 
+    override fun getItemCount(): Int = items.size
+
+    fun updateItems(newItems: List<ActivityItem>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
 }
