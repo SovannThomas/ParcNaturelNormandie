@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.parcnaturelnormandie.R
 import com.example.parcnaturelnormandie.model.ActivityItem
 
@@ -30,24 +31,24 @@ class MyItemActivitiesRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ActivityViewHolder, position: Int) {
         val item = items[position]
 
-        // Titre = nom
         holder.txtTitle.text = item.nom
 
-        // Durée
-        holder.txtDuration.text = item.duree.ifBlank { "—" }
+        holder.txtDuration.text = if (item.duree.isNotBlank()) item.duree else "—"
 
-        // Prix : gratuit si 0, sinon "XX €"
         holder.txtPrice.text = when {
             item.tarif <= 0 -> "Gratuit"
             else -> "${item.tarif} €"
         }
 
+        val baseUrl = "http://172.17.23.200:8002/"
+        Glide.with(holder.itemView)
+            .load(baseUrl + item.image_url)
+            .centerCrop()
+            .placeholder(R.drawable.ic_dashboard_black_24dp)
+            .into(holder.imgActivity)
 
-
-        // Clic sur l’item
-        holder.itemView.setOnClickListener {
-            onItemClick(item)
-        }
+        // Clic item
+        holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
     override fun getItemCount(): Int = items.size
@@ -56,4 +57,6 @@ class MyItemActivitiesRecyclerViewAdapter(
         items = newItems
         notifyDataSetChanged()
     }
+
+
 }
