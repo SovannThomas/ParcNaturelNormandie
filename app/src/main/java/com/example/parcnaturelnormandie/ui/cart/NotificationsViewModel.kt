@@ -1,4 +1,4 @@
-package com.example.parcnaturelnormandie.ui.notifications
+package com.example.parcnaturelnormandie.ui.cart
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
