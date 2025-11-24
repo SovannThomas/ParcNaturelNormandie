@@ -1,5 +1,4 @@
 package com.example.parcnaturelnormandie.ui.home
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,7 +6,12 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.parcnaturelnormandie.MainActivity
+import com.example.parcnaturelnormandie.R
 import com.example.parcnaturelnormandie.databinding.FragmentHomeBinding
+import com.example.parcnaturelnormandie.model.ActivityItem
+import com.example.parcnaturelnormandie.model.SharedViewModel
+import java.lang.Character.toString
 
 class HomeFragment : Fragment() {
 
@@ -16,23 +20,29 @@ class HomeFragment : Fragment() {
 
     private lateinit var adapter: HomeAdapter
     private lateinit var homeViewModel: HomeViewModel
+    private lateinit var sharedViewModel: SharedViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Initialisation ViewBinding
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
 
-        // Initialisation ViewModel
-        homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
+        // ViewModels
+        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
+        sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
 
-        // Initialisation RecyclerView et Adapter
+        // Adapter
         adapter = HomeAdapter(listOf()) { activity ->
-            // Action au clic sur un item, par exemple :
-            // Toast.makeText(requireContext(), activity.name, Toast.LENGTH_SHORT).show()
+            // id pour le filtre, nom/libellé pour l’affichage
+            sharedViewModel.selectActivity(
+                id = activity.id.toString(),
+                label = activity.libelle
+            )
+
+            (requireActivity() as MainActivity).binding.navView.selectedItemId =
+                R.id.navigation_activities
         }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -43,10 +53,10 @@ class HomeFragment : Fragment() {
             adapter.updateData(list)
         }
 
-        // Charger les données depuis le ViewModel
+        // Charger les données
         homeViewModel.loadData()
 
-        return root
+        return binding.root
     }
 
     override fun onDestroyView() {
