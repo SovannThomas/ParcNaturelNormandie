@@ -35,11 +35,12 @@ class HomeFragment : Fragment() {
 
         // Adapter
         adapter = HomeAdapter(listOf()) { activity ->
-            // Stocker l'activité sélectionnée dans le SharedViewModel
-            sharedViewModel.selectActivity(activity.id.toString())
+            // id pour le filtre, nom/libellé pour l’affichage
+            sharedViewModel.selectActivity(
+                id = activity.id.toString(),
+                label = activity.libelle
+            )
 
-
-            // Naviguer vers ActivitiesFragment via BottomNavigationView
             (requireActivity() as MainActivity).binding.navView.selectedItemId =
                 R.id.navigation_activities
         }
