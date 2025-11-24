@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -21,6 +22,9 @@ class ActivitiesFragment : Fragment() {
     private lateinit var adapter: MyItemActivitiesRecyclerViewAdapter
     private val activitiesUrl = "http://172.17.23.200:8002/api/activities"
 
+    // Liste complète des activités (triées A→Z)
+    private var fullActivities: List<ActivityItem> = emptyList()
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -36,18 +40,45 @@ class ActivitiesFragment : Fragment() {
         // Adapter avec liste vide au départ
         adapter = MyItemActivitiesRecyclerViewAdapter(emptyList()) { item ->
             // callback clic: gérer la navigation ou l’affichage de détails
-            // ex: ouvrir un fragment de détail, etc.
         }
 
         binding.recyclerActivitiesView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerActivitiesView.adapter = adapter
 
-        // Chargement des données depuis l'API
+        setupSearchView()
         loadActivitiesFromApi()
     }
 
+    private fun setupSearchView() {
+        binding.searchActivitiesView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                filterActivities(query.orEmpty())
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                filterActivities(newText.orEmpty())
+                return true
+            }
+        })
+    }
+
+    private fun filterActivities(query: String) {
+        val trimmedQuery = query.trim()
+
+        val filtered = if (trimmedQuery.isEmpty()) {
+            // Pas de recherche → on affiche tout (déjà trié)
+            fullActivities
+        } else {
+            fullActivities.filter { activity ->
+                activity.nom.contains(trimmedQuery, ignoreCase = true)
+            }
+        }
+
+        adapter.updateItems(filtered)
+    }
+
     private fun loadActivitiesFromApi() {
-        // Ne jamais faire de requête réseau sur le thread principal
         Thread {
             try {
                 val url = URL(activitiesUrl)
@@ -62,12 +93,12 @@ class ActivitiesFragment : Fragment() {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
 
-                    // On parse le JSON -> List<ActivityItem>
                     val activities = parseActivitiesJson(response)
 
-                    // Mise à jour de l’UI sur le thread principal
+                    fullActivities = activities.sortedBy { it.nom.lowercase() }
+
                     activity?.runOnUiThread {
-                        adapter.updateItems(activities)
+                        adapter.updateItems(fullActivities)
                     }
                 } else {
                     activity?.runOnUiThread {
