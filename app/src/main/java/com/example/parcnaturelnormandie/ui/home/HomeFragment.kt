@@ -11,6 +11,7 @@ import com.example.parcnaturelnormandie.R
 import com.example.parcnaturelnormandie.databinding.FragmentHomeBinding
 import com.example.parcnaturelnormandie.model.ActivityItem
 import com.example.parcnaturelnormandie.model.SharedViewModel
+import java.lang.Character.toString
 
 class HomeFragment : Fragment() {
 
@@ -35,7 +36,8 @@ class HomeFragment : Fragment() {
         // Adapter
         adapter = HomeAdapter(listOf()) { activity ->
             // Stocker l'activité sélectionnée dans le SharedViewModel
-            sharedViewModel.selectActivity(activity.libelle)
+            sharedViewModel.selectActivity(activity.id.toString())
+
 
             // Naviguer vers ActivitiesFragment via BottomNavigationView
             (requireActivity() as MainActivity).binding.navView.selectedItemId =

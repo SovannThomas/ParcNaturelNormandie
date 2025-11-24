@@ -11,9 +11,11 @@ import android.widget.LinearLayout
 import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.parcnaturelnormandie.databinding.FragmentActivitiesBinding
 import com.example.parcnaturelnormandie.model.ActivityItem
+import com.example.parcnaturelnormandie.model.SharedViewModel
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
@@ -22,11 +24,14 @@ class ActivitiesFragment : Fragment() {
 
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
+    private lateinit var sharedViewModel: SharedViewModel
+    private var activityType: String? = null
+
 
     val activityName = arguments?.getString("activity_name")
 
     private lateinit var adapter: MyItemActivitiesRecyclerViewAdapter
-    private val activitiesUrl = "http://172.17.23.200:8002/api/activities"
+    private var activitiesUrl = "http://172.17.23.200:8002/api/activities"
 
     // REMIS
     private var fullActivities: List<ActivityItem> = emptyList()
@@ -44,8 +49,15 @@ class ActivitiesFragment : Fragment() {
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {    super.onViewCreated(view, savedInstanceState)
+
+        sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+
+        // Observer la valeur sélectionnée depuis HomeFragment
+        sharedViewModel.selectedActivityName.observe(viewLifecycleOwner) { value ->
+            activityType = value
+            loadActivitiesFromApi() // <- appeler ici, après que activityType soit défini
+        }
 
         // Adapter avec liste vide au départ
         adapter = MyItemActivitiesRecyclerViewAdapter(emptyList()) { item ->
@@ -58,9 +70,6 @@ class ActivitiesFragment : Fragment() {
         // REMIS
         setupSearchView()
         setupFilterButton()
-
-        // Chargement des données depuis l'API
-        loadActivitiesFromApi()
     }
 
     // REMIS
@@ -174,9 +183,17 @@ class ActivitiesFragment : Fragment() {
     }
 
     private fun loadActivitiesFromApi() {
+
+        // Construction de l’URL en fonction du paramètre envoyé
+        val urlString = if (activityType.isNullOrBlank()) {
+            activitiesUrl  // URL sans filtre
+        } else {
+            "$activitiesUrl?type_id=${activityType}" // URL filtrée
+        }
+
         Thread {
             try {
-                val url = URL(activitiesUrl)
+                val url = URL(urlString)
                 val connection = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
                     connectTimeout = 5000
@@ -193,7 +210,7 @@ class ActivitiesFragment : Fragment() {
                     fullActivities = activities.sortedBy { it.nom.lowercase() }
 
                     activity?.runOnUiThread {
-                        applyFilters() // REMIS
+                        applyFilters()
                     }
                 } else {
                     activity?.runOnUiThread {
@@ -218,6 +235,7 @@ class ActivitiesFragment : Fragment() {
             }
         }.start()
     }
+
 
     private fun parseActivitiesJson(json: String): List<ActivityItem> {
         val list = mutableListOf<ActivityItem>()
