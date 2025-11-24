@@ -12,7 +12,9 @@ import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.parcnaturelnormandie.R
 import com.example.parcnaturelnormandie.databinding.FragmentActivitiesBinding
 import com.example.parcnaturelnormandie.model.ActivityItem
 import com.example.parcnaturelnormandie.model.SharedViewModel
@@ -25,10 +27,11 @@ class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: SharedViewModel
-    private var activityType: String? = null
+
+    private var activityTypeId: String? = null
 
 
-    val activityName = arguments?.getString("activity_name")
+
 
     private lateinit var adapter: MyItemActivitiesRecyclerViewAdapter
     private var activitiesUrl = "http://172.17.23.200:8002/api/activities"
@@ -54,9 +57,13 @@ class ActivitiesFragment : Fragment() {
         sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
 
         // Observer la valeur sélectionnée depuis HomeFragment
-        sharedViewModel.selectedActivityName.observe(viewLifecycleOwner) { value ->
-            activityType = value
-            loadActivitiesFromApi() // <- appeler ici, après que activityType soit défini
+        sharedViewModel.selectedActivityId.observe(viewLifecycleOwner) { value ->
+            activityTypeId = value
+            loadActivitiesFromApi()
+        }
+
+        sharedViewModel.selectedActivityLabel.observe(viewLifecycleOwner) { label ->
+            binding.typeActivityTextView.text = label ?: "Activités"
         }
 
         // Adapter avec liste vide au départ
@@ -66,6 +73,11 @@ class ActivitiesFragment : Fragment() {
 
         binding.recyclerActivitiesView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerActivitiesView.adapter = adapter
+
+        binding.returnButton.setOnClickListener {
+            val navController = requireActivity().findNavController(R.id.nav_host_fragment_activity_main)
+            navController.navigate(R.id.navigation_home)
+        }
 
         // REMIS
         setupSearchView()
@@ -185,10 +197,10 @@ class ActivitiesFragment : Fragment() {
     private fun loadActivitiesFromApi() {
 
         // Construction de l’URL en fonction du paramètre envoyé
-        val urlString = if (activityType.isNullOrBlank()) {
-            activitiesUrl  // URL sans filtre
+        val urlString = if (activityTypeId.isNullOrBlank()) {
+            activitiesUrl
         } else {
-            "$activitiesUrl?type_id=${activityType}" // URL filtrée
+            "$activitiesUrl?type_id=$activityTypeId"
         }
 
         Thread {
