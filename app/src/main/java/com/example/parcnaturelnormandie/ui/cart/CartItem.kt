@@ -8,6 +8,7 @@ data class CartItem(
     val title: String,
     val duration: String,
     val price: String,
-    val date: LocalDateTime
+    val date: LocalDateTime,
+    val imgUrl: String? = null // url de l'image distante
 )
 

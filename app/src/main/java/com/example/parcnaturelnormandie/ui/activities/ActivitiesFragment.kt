@@ -82,6 +82,9 @@ class ActivitiesFragment : Fragment() {
         // REMIS
         setupSearchView()
         setupFilterButton()
+        loadActivitiesFromApi()
+
+
     }
 
     // REMIS

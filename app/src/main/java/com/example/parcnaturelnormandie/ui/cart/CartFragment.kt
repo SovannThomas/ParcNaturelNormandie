@@ -39,75 +39,66 @@ class CartFragment : Fragment() {
 
         // 1) insérer des exemples en base
         viewLifecycleOwner.lifecycleScope.launch {
-            val demoItems = listOf(
-                CartItemEntity(
-                    title = "Belvédère d'En-Vau",
-                    duration = "2h00",
-                    price = "20€",
-                    dateTimeMillis = System.currentTimeMillis()
-                ),
-                CartItemEntity(
-                    title = "Sentier des Douaniers",
-                    duration = "3h30",
-                    price = "15€",
-                    dateTimeMillis = System.currentTimeMillis()
-                )
-            )
-
-            cartDao.clear()
-            cartDao.insertAll(demoItems)
-
-            // 2) lire depuis la base
-            val itemsFromDb = cartDao.getAll()
-
-            // 3) mapper vers ton modèle UI CartItem
-            val cartItems = itemsFromDb.map {
-                CartItem(
-                    imageResId = R.drawable.ic_launcher_foreground,
-                    title = it.title,
-                    duration = it.duration,
-                    price = it.price,
-                    date = LocalDateTime.ofEpochSecond(
-                        it.dateTimeMillis / 1000,
-                        0,
-                        java.time.ZoneOffset.UTC
-                    )
-                )
-            }
-
-            fun refreshAdapter() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val updatedItems = cartDao.getAll().map {
-                        CartItem(
-                            imageResId = R.drawable.ic_launcher_foreground,
-                            title = it.title,
-                            duration = it.duration,
-                            price = it.price,
-                            date = LocalDateTime.ofEpochSecond(
-                                it.dateTimeMillis / 1000,
-                                0,
-                                java.time.ZoneOffset.UTC
-                            )
+            cartDao.getAll().let { itemsFromDb ->
+                val cartItems = itemsFromDb.map {
+                    CartItem(
+                        imageResId = R.drawable.ic_launcher_foreground,
+                        imgUrl = it.imgUrl,
+                        title = it.title,
+                        duration = it.duration,
+                        price = it.price,
+                        date = LocalDateTime.ofEpochSecond(
+                            it.dateTimeMillis / 1000,
+                            0,
+                            java.time.ZoneOffset.UTC
                         )
-                    }
-                    recyclerView.adapter = CartAdapter(updatedItems) { itemToDelete ->
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val entityToDelete = cartDao.getAll().find { it.title == itemToDelete.title }
-                            if (entityToDelete != null) {
-                                cartDao.delete(entityToDelete)
-                                refreshAdapter()
+                    )
+                }
+                recyclerView.adapter = CartAdapter(cartItems) { cartItem ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val entity = cartDao.getAll().find { it.title == cartItem.title }
+                        if (entity != null) {
+                            cartDao.delete(entity)
+                            // Rafraîchir la liste après suppression
+                            val updatedItems = cartDao.getAll().map {
+                                CartItem(
+                                    imageResId = R.drawable.ic_launcher_foreground,
+                                    imgUrl = it.imgUrl,
+                                    title = it.title,
+                                    duration = it.duration,
+                                    price = it.price,
+                                    date = LocalDateTime.ofEpochSecond(
+                                        it.dateTimeMillis / 1000,
+                                        0,
+                                        java.time.ZoneOffset.UTC
+                                    )
+                                )
+                            }
+                            recyclerView.adapter = CartAdapter(updatedItems) { updatedCartItem ->
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val updatedEntity = cartDao.getAll().find { it.title == updatedCartItem.title }
+                                    if (updatedEntity != null) {
+                                        cartDao.delete(updatedEntity)
+                                        // Rafraîchir la liste après suppression
+                                        val refreshedItems = cartDao.getAll().map {
+                                            CartItem(
+                                                imageResId = R.drawable.ic_launcher_foreground,
+                                                imgUrl = it.imgUrl,
+                                                title = it.title,
+                                                duration = it.duration,
+                                                price = it.price,
+                                                date = LocalDateTime.ofEpochSecond(
+                                                    it.dateTimeMillis / 1000,
+                                                    0,
+                                                    java.time.ZoneOffset.UTC
+                                                )
+                                            )
+                                        }
+                                        recyclerView.adapter = CartAdapter(refreshedItems) { /* même logique si besoin */ }
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            }
-
-            recyclerView.adapter = CartAdapter(cartItems) { cartItem ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val entity = cartDao.getAll().find { it.title == cartItem.title }
-                    if (entity != null) {
-                        cartDao.delete(entity)
-                        refreshAdapter()
                     }
                 }
             }
