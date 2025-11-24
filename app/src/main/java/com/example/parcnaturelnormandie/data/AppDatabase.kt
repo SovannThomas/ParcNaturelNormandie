@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [CartItemEntity::class],
-    version = 1,
+    version = 2, // Incrémentation de la version pour refléter le changement de schéma
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,7 +24,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "parc_normandie.db"
-                ).build().also { INSTANCE = it }
+                )
+                .fallbackToDestructiveMigration() // Ajout pour éviter le crash si migration manquante
+                .build().also { INSTANCE = it }
             }
     }
 }

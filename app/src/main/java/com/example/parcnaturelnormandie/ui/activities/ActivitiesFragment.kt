@@ -54,6 +54,8 @@ class ActivitiesFragment : Fragment() {
         setupSearchView()
         setupFilterButton()
         loadActivitiesFromApi()
+
+
     }
 
     private fun setupSearchView() {

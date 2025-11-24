@@ -9,5 +9,6 @@ data class CartItemEntity(
     val title: String,
     val duration: String,
     val price: String,
-    val dateTimeMillis: Long // on stocke la date en millis, plus simple au début
+    val dateTimeMillis: Long, // on stocke la date en millis, plus simple au début
+    val imgUrl: String? = null // url de l'image distante
 )

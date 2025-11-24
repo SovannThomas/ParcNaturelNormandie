@@ -1,5 +1,6 @@
 package com.example.parcnaturelnormandie.data
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 
 @Dao
@@ -19,4 +20,8 @@ interface CartDao {
 
     @Query("DELETE FROM cart_items")
     suspend fun clear()
+
+    @Query("SELECT * FROM cart_items")
+    fun getAllLive(): LiveData<List<CartItemEntity>>
+
 }
