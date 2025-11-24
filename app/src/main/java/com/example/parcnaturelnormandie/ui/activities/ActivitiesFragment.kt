@@ -1,9 +1,14 @@
 package com.example.parcnaturelnormandie.ui.activities
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,6 +28,13 @@ class ActivitiesFragment : Fragment() {
     private lateinit var adapter: MyItemActivitiesRecyclerViewAdapter
     private val activitiesUrl = "http://172.17.23.200:8002/api/activities"
 
+    // REMIS
+    private var fullActivities: List<ActivityItem> = emptyList()
+
+    private var currentQuery: String = ""
+    private var maxPrice: Int? = null               // en €
+    private var maxDurationMinutes: Int? = null     // en minutes
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -38,18 +50,130 @@ class ActivitiesFragment : Fragment() {
         // Adapter avec liste vide au départ
         adapter = MyItemActivitiesRecyclerViewAdapter(emptyList()) { item ->
             // callback clic: gérer la navigation ou l’affichage de détails
-            // ex: ouvrir un fragment de détail, etc.
         }
 
         binding.recyclerActivitiesView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerActivitiesView.adapter = adapter
 
+        // REMIS
+        setupSearchView()
+        setupFilterButton()
+
         // Chargement des données depuis l'API
         loadActivitiesFromApi()
     }
 
+    // REMIS
+    private fun setupSearchView() {
+        binding.searchActivitiesView.setOnQueryTextListener(object :
+            SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                currentQuery = query.orEmpty()
+                applyFilters()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                currentQuery = newText.orEmpty()
+                applyFilters()
+                return true
+            }
+        })
+    }
+
+    // REMIS
+    private fun setupFilterButton() {
+        binding.filterButton.setOnClickListener {
+            showFilterDialog()
+        }
+    }
+
+    // REMIS
+    private fun showFilterDialog() {
+        val context = requireContext()
+
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+
+        val priceEditText = EditText(context).apply {
+            hint = "Prix max (€)"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            maxPrice?.let { setText(it.toString()) }
+        }
+
+        val durationEditText = EditText(context).apply {
+            hint = "Durée max (minutes)"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            maxDurationMinutes?.let { setText(it.toString()) }
+        }
+
+        container.addView(priceEditText)
+        container.addView(durationEditText)
+
+        AlertDialog.Builder(context)
+            .setTitle("Filtrer les activités")
+            .setView(container)
+            .setPositiveButton("Appliquer") { _, _ ->
+                maxPrice = priceEditText.text.toString().toIntOrNull()
+                maxDurationMinutes = durationEditText.text.toString().toIntOrNull()
+                applyFilters()
+            }
+            .setNegativeButton("Réinitialiser") { _, _ ->
+                maxPrice = null
+                maxDurationMinutes = null
+                currentQuery = ""
+                binding.searchActivitiesView.setQuery("", false)
+                applyFilters()
+            }
+            .setNeutralButton("Annuler", null)
+            .show()
+    }
+
+    // REMIS
+    private fun applyFilters() {
+        var result = fullActivities
+
+        val q = currentQuery.trim()
+        if (q.isNotEmpty()) {
+            result = result.filter { activity ->
+                activity.nom.contains(q, ignoreCase = true)
+            }
+        }
+
+        maxPrice?.let { maxP ->
+            result = result.filter { activity ->
+                activity.tarif <= maxP
+            }
+        }
+
+        maxDurationMinutes?.let { maxD ->
+            result = result.filter { activity ->
+                val minutes = parseDurationToMinutes(activity.duree) ?: Int.MAX_VALUE
+                minutes <= maxD
+            }
+        }
+
+        adapter.updateItems(result)
+    }
+
+    // REMIS
+    private fun parseDurationToMinutes(duree: String): Int? {
+        if (duree.isBlank()) return null
+        return try {
+            val parts = duree.split(":")
+            val hours = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            val seconds = parts.getOrNull(2)?.toIntOrNull() ?: 0
+            hours * 60 + minutes + if (seconds > 0) 1 else 0
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun loadActivitiesFromApi() {
-        // Ne jamais faire de requête réseau sur le thread principal
         Thread {
             try {
                 val url = URL(activitiesUrl)
@@ -64,12 +188,12 @@ class ActivitiesFragment : Fragment() {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
 
-                    // On parse le JSON -> List<ActivityItem>
                     val activities = parseActivitiesJson(response)
 
-                    // Mise à jour de l’UI sur le thread principal
+                    fullActivities = activities.sortedBy { it.nom.lowercase() }
+
                     activity?.runOnUiThread {
-                        adapter.updateItems(activities)
+                        applyFilters() // REMIS
                     }
                 } else {
                     activity?.runOnUiThread {
