@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">ParcNaturelNormandie</string>
     <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
     <string name="title_activities">Activités</string>
     <string name="title_notifications">Notifications</string>
     <!-- Strings used for fragments for navigation -->
