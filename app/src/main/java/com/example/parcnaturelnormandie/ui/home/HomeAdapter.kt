@@ -12,7 +12,8 @@ import com.example.parcnaturelnormandie.R
 
 class HomeAdapter(
     private var items: List<ActivityType>,
-    private val onClick: ((ActivityType) -> Unit)? = null
+    private val onClick: ((ActivityType) -> Unit)? = null,
+    private val onItemClick:(ActivityType)->Unit
 ) : RecyclerView.Adapter<HomeAdapter.VH>() {
 
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -41,6 +42,9 @@ class HomeAdapter(
             .centerCrop()
             .placeholder(R.drawable.ic_placeholder)
             .into(holder.image)
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
+        }
     }
 
     override fun getItemCount(): Int = items.size
